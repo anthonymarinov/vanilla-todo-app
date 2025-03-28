@@ -80,6 +80,7 @@ form.addEventListener("submit", function (e) { return __awaiter(_this, void 0, v
                     })];
             case 1:
                 _a.sent();
+                form.reset();
                 fetchTodos();
                 return [2 /*return*/];
         }

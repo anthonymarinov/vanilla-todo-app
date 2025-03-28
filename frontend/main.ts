@@ -32,6 +32,8 @@ form.addEventListener("submit", async (e) => {
         body: JSON.stringify(todo)
     });
 
+    form.reset();
+
     fetchTodos();
 });
 
