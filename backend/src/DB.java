@@ -6,7 +6,9 @@ import java.sql.SQLException;
  * This class manages the JDBC connection to the SQLite database;
  */
 public class DB {
-    private static final String URL = "jdbc:sqlite:database.db";
+    private static final String URL = 
+            "jdbc:sqlite:" +
+            "d:my-files/coding-projects/vanilla-todo-app/backend/database.db";
 
     /**
      * Get the Connection to the SQLite database.
