@@ -2,6 +2,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
+/**
+ * This class creates a server to handle requests and routes requests to /todos
+ * to TodoHandler.
+ */
 public class Main {
     public static void main(String[] args) throws IOException {
         int port = 8000;
