@@ -8,7 +8,7 @@ import java.sql.SQLException;
 public class DB {
     private static final String URL = 
             "jdbc:sqlite:" +
-            "d:my-files/coding-projects/vanilla-todo-app/backend/database.db";
+            "d:/my-files/coding-projects/vanilla-todo-app/backend/database.db";
 
     /**
      * Get the Connection to the SQLite database.

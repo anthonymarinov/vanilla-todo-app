@@ -20,6 +20,16 @@ public class TodoHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
 
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", 
+                    "GET, POST, PUT, DELETE, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", 
+                    "Content-Type");
+            exchange.sendResponseHeaders(204, -1);
+            return;
+        }
+
         try {
             switch (method) {
                 case "GET":
@@ -39,7 +49,11 @@ public class TodoHandler implements HttpHandler {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            this.sendResponse(exchange, 500, "Server Error");
+            this.sendResponse(exchange, 
+                    500, 
+                    "{\"error\": \"Server Error: " + 
+                    e.getMessage() + "\"}"
+            );
         }
     }
 
@@ -54,7 +68,7 @@ public class TodoHandler implements HttpHandler {
             throws IOException, SQLException {
         Connection conn = DB.getConnection();
         Statement stmt = conn.createStatement();
-        String sql = "SELECT id, item, due_date, completed FROM todos";
+        String sql = "SELECT id, item, description, completed FROM todos";
         ResultSet rs = stmt.executeQuery(sql);
 
         StringBuilder json = new StringBuilder();
@@ -66,12 +80,13 @@ public class TodoHandler implements HttpHandler {
             }
             json.append("{")
                 .append("\"id\":").append(rs.getInt("id")).append(",")
-                .append("\"item\":").append(rs.getString("item")).append(",")
-                .append("\"due_date\":").append(rs.getDate("due_date")).append(",")
+                .append("\"item\":\"").append(rs.getString("item")).append("\",")
+                .append("\"description\":\"").append(rs.getString("description")).append("\",")
                 .append("\"completed\":").append(rs.getBoolean("completed"))
                 .append("}");
             first = false;
         }
+
         json.append("]");
 
         rs.close();
@@ -94,16 +109,16 @@ public class TodoHandler implements HttpHandler {
         BufferedReader buffRead = new BufferedReader(inStreamRead);
         String body = buffRead.lines().collect(Collectors.joining("\n"));
         
-        String item = body.replaceAll(".*\"title\"\\s*:\\s*\"([^\"]+)\".*", "$1");
-        String dueDate = body.replaceAll(".*\"due_date\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+        String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+        String description = body.replaceAll(".*\"description\"\\s*:\\s*\"([^\"]+)\".*", "$1");
         String completedStr = body.replaceAll(".*\"completed\"\\s*:\\s*(true|false).*", "$1");
         boolean completed = Boolean.parseBoolean(completedStr);
 
         Connection conn = DB.getConnection();
-        String sql = "INSERT INTO todos (item, due_date, completed) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO todos (item, description, completed) VALUES (?, ?, ?)";
         PreparedStatement pstmt = conn.prepareStatement(sql);
         pstmt.setString(1, item);
-        pstmt.setString(2, dueDate);
+        pstmt.setString(2, description);
         pstmt.setBoolean(3, completed);
         int rows = pstmt.executeUpdate();
         pstmt.close();
@@ -149,7 +164,13 @@ public class TodoHandler implements HttpHandler {
     private void sendResponse(
             HttpExchange exchange, int statusCode, String response) 
             throws IOException {
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", 
+                "GET, POST, PUT, DELETE, OPTIONS");
+        exchange.getResponseHeaders().add("Access-Control-Allow-Headers", 
+                "Content-Type");
         exchange.getResponseHeaders().add("Content-Type", "application/json");
+
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(statusCode, bytes.length);
         OutputStream os = exchange.getResponseBody();
