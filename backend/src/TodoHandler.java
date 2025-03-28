@@ -89,9 +89,10 @@ public class TodoHandler implements HttpHandler {
      */
     private void handlePost(HttpExchange exchange)
             throws IOException, SQLException {
-        String body = new BufferedReader(new InputStreamReader(
-                exchange.getRequestBody(), StandardCharsets.UTF_8
-            )).lines().collect(Collectors.joining("\n"));
+        InputStreamReader inStreamRead = new InputStreamReader(
+                exchange.getRequestBody(), StandardCharsets.UTF_8);
+        BufferedReader buffRead = new BufferedReader(inStreamRead);
+        String body = buffRead.lines().collect(Collectors.joining("\n"));
         
         String item = body.replaceAll(".*\"title\"\\s*:\\s*\"([^\"]+)\".*", "$1");
         String dueDate = body.replaceAll(".*\"due_date\"\\s*:\\s*\"([^\"]+)\".*", "$1");
@@ -107,6 +108,8 @@ public class TodoHandler implements HttpHandler {
         int rows = pstmt.executeUpdate();
         pstmt.close();
         conn.close();
+        inStreamRead.close();
+        buffRead.close();
 
         this.sendResponse(
                 exchange, 
