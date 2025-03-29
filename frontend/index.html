@@ -4,17 +4,20 @@
     <meta charset="UTF-8">
     <title>Todo App</title>
     <link rel="stylesheet" href ="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body>
-    <h1>Todo List</h1>
-    <div id="todo-container"></div>
+    <div class="container">
+        <h1 class="title">Todo List</h1>
 
-    <h2>Add Todo</h2>
-    <form id="todo-form">
-        <input type="text" id="item" placeholder="Item" required>
-        <button type="submit" id="form-button">Add Todo</button>
-    </form>
+        <form class="add-todo">
+            <input type="text" class="item-input" placeholder="Add Item" required>
+            <button type="submit" class="add-button">Add Todo</button>
+        </form>
+
+        <div id="todo-container"></div>
+    </div>
 
     <script src="main.js"></script>
 </body>

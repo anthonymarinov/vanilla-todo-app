@@ -1,45 +1,47 @@
+interface Todo {
+    id: string;
+    item: string;
+}
+
 const apiURL = "http://localhost:8000/todos";
 
-async function fetchTodos() {
-    const response = await fetch(apiURL);
-    const todos = await response.json();
-    const container = document.getElementById("todo-container");
-    if (container) {
-        container.innerHTML = "";
-        todos.forEach((todo: any) => {
-            const div = document.createElement("div");
-            const updateButton = document.createElement("button");
-            div.textContent = `• ${todo.item}`;
-            updateButton.textContent = "Update";
-            updateButton.id = "update-button";
-            updateButton.type = "submit";
-            div.appendChild(updateButton);
-            div.id = "todo-text";
-            container.appendChild(div);
+async function getTodos() {
+    try {
+        const response = await fetch(apiURL);
+        const todoList: Todo[] = await response.json();
+        return todoList;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+async function displayTodos() {
+    const todoList = await getTodos();
+    let todoContainer = document.querySelector("#todo-container") as HTMLDivElement;
+    if (!todoList) {return;}
+    if (todoList.length == 0) {
+        todoContainer.innerHTML += `
+                <div class="todo">
+                    <span> No tasks to complete! </span>
+                </div>
+        `;
+    } else {
+        todoList.forEach((todo) => {
+            todoContainer.innerHTML += `
+                <div class="todo">
+                    <span>${todo.item}</span>
+                    <div class="actions">
+                        <button class="edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="delete">
+                            <i class="far fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
         });
     }
 }
 
-async function createTodo(item: string) {
-    const todo = { item };
-    await fetch(apiURL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(todo)
-    });
-    fetchTodos();
-}
-
-const form = document.getElementById("todo-form") as HTMLFormElement;
-const todoContainer = document.getElementById("todo-container") as HTMLDivElement;
-
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const item = (document.getElementById("item") as HTMLInputElement).value;
-    createTodo(item);
-    form.reset();
-});
-
-fetchTodos();
+displayTodos();

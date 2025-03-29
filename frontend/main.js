@@ -34,32 +34,48 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 var apiURL = "http://localhost:8000/todos";
-function fetchTodos() {
+function getTodos() {
     return __awaiter(this, void 0, void 0, function () {
-        var response, todos, container;
+        var response, todoList, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, fetch(apiURL)];
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, fetch(apiURL)];
                 case 1:
                     response = _a.sent();
                     return [4 /*yield*/, response.json()];
                 case 2:
-                    todos = _a.sent();
-                    container = document.getElementById("todo-container");
-                    if (container) {
-                        container.innerHTML = "";
-                        todos.forEach(function (todo) {
-                            var div = document.createElement("div");
-                            var updateButton = document.createElement("button");
-                            div.textContent = "\u2022 ".concat(todo.item);
-                            updateButton.textContent = "Update";
-                            updateButton.id = "update-button";
-                            updateButton.type = "submit";
-                            div.appendChild(updateButton);
-                            div.id = "todo-text";
-                            container.appendChild(div);
+                    todoList = _a.sent();
+                    return [2 /*return*/, todoList];
+                case 3:
+                    error_1 = _a.sent();
+                    console.log(error_1);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function displayTodos() {
+    return __awaiter(this, void 0, void 0, function () {
+        var todoList, todoContainer;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, getTodos()];
+                case 1:
+                    todoList = _a.sent();
+                    todoContainer = document.querySelector("#todo-container");
+                    if (!todoList) {
+                        return [2 /*return*/];
+                    }
+                    if (todoList.length == 0) {
+                        todoContainer.innerHTML += "\n                <div class=\"todo\">\n                    <span> No tasks to complete! </span>\n                </div>\n        ";
+                    }
+                    else {
+                        todoList.forEach(function (todo) {
+                            todoContainer.innerHTML += "\n                <div class=\"todo\">\n                    <span>".concat(todo.item, "</span>\n                    <div class=\"actions\">\n                        <button class=\"edit\">\n                            <i class=\"fas fa-edit\"></i>\n                        </button>\n                        <button class=\"delete\">\n                            <i class=\"far fa-trash-alt\"></i>\n                        </button>\n                    </div>\n                </div>\n            ");
                         });
                     }
                     return [2 /*return*/];
@@ -67,38 +83,4 @@ function fetchTodos() {
         });
     });
 }
-function createTodo(item) {
-    return __awaiter(this, void 0, void 0, function () {
-        var todo;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    todo = { item: item };
-                    return [4 /*yield*/, fetch(apiURL, {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify(todo)
-                        })];
-                case 1:
-                    _a.sent();
-                    fetchTodos();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-var form = document.getElementById("todo-form");
-var todoContainer = document.getElementById("todo-container");
-form.addEventListener("submit", function (e) { return __awaiter(_this, void 0, void 0, function () {
-    var item;
-    return __generator(this, function (_a) {
-        e.preventDefault();
-        item = document.getElementById("item").value;
-        createTodo(item);
-        form.reset();
-        return [2 /*return*/];
-    });
-}); });
-fetchTodos();
+displayTodos();
