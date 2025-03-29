@@ -68,7 +68,7 @@ public class TodoHandler implements HttpHandler {
             throws IOException, SQLException {
         Connection conn = DB.getConnection();
         Statement stmt = conn.createStatement();
-        String sql = "SELECT id, item, description, completed FROM todos";
+        String sql = "SELECT id, item FROM todos";
         ResultSet rs = stmt.executeQuery(sql);
 
         StringBuilder json = new StringBuilder();
@@ -80,9 +80,7 @@ public class TodoHandler implements HttpHandler {
             }
             json.append("{")
                 .append("\"id\":").append(rs.getInt("id")).append(",")
-                .append("\"item\":\"").append(rs.getString("item")).append("\",")
-                .append("\"description\":\"").append(rs.getString("description")).append("\",")
-                .append("\"completed\":").append(rs.getBoolean("completed"))
+                .append("\"item\":\"").append(rs.getString("item")).append("\"")
                 .append("}");
             first = false;
         }
@@ -110,16 +108,11 @@ public class TodoHandler implements HttpHandler {
         String body = buffRead.lines().collect(Collectors.joining("\n"));
         
         String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
-        String description = body.replaceAll(".*\"description\"\\s*:\\s*\"([^\"]+)\".*", "$1");
-        String completedStr = body.replaceAll(".*\"completed\"\\s*:\\s*(true|false).*", "$1");
-        boolean completed = Boolean.parseBoolean(completedStr);
 
         Connection conn = DB.getConnection();
-        String sql = "INSERT INTO todos (item, description, completed) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO todos (item) VALUES (?)";
         PreparedStatement pstmt = conn.prepareStatement(sql);
         pstmt.setString(1, item);
-        pstmt.setString(2, description);
-        pstmt.setBoolean(3, completed);
         int rows = pstmt.executeUpdate();
         pstmt.close();
         conn.close();
@@ -138,12 +131,32 @@ public class TodoHandler implements HttpHandler {
      * @param exchange
      * @throws IOException
      */
-    private void handlePut(HttpExchange exchange) throws IOException {
-        // TODO *****
+    private void handlePut(HttpExchange exchange) 
+            throws IOException, SQLException {
+        InputStreamReader inStreamReader = new InputStreamReader(
+                exchange.getRequestBody(), StandardCharsets.UTF_8);
+        BufferedReader buffReader = new BufferedReader(inStreamReader);
+        String body = buffReader.lines().collect(Collectors.joining("\n"));
+
+        String idString = body.replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1");
+        int id = Integer.parseInt(idString);
+        String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+
+        Connection conn = DB.getConnection();
+        String sql = "UPDATE todos" + 
+                "SET item = " + item +
+                "WHERE id = " + id;
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        int rows = pstmt.executeUpdate();
+        pstmt.close();
+        conn.close();
+        inStreamReader.close();
+        buffReader.close();
+
         this.sendResponse(
                 exchange, 
                 200, 
-                "{\"message\": \"PUT method not implemented yet\"}"
+                "{\"message\": \"Todo updated\", \"rows\": " + rows + "}"
         );
     }
 

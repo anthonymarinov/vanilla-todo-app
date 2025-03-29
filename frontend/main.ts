@@ -8,22 +8,20 @@ async function fetchTodos() {
         container.innerHTML = "";
         todos.forEach((todo: any) => {
             const div = document.createElement("div");
-            div.textContent = `${todo.id}: ${todo.item} - ${todo.description} 
-                    [${todo.completed ? "Done" : "Pending"}]`;
+            const updateButton = document.createElement("button");
+            div.textContent = `• ${todo.item}`;
+            updateButton.textContent = "Update";
+            updateButton.id = "update-button";
+            updateButton.type = "submit";
+            div.appendChild(updateButton);
+            div.id = "todo-text";
             container.appendChild(div);
         });
     }
 }
 
-const form = document.getElementById("todo-form") as HTMLFormElement;
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const item = (document.getElementById("item") as HTMLInputElement).value;
-    const description = (document.getElementById("description") as HTMLInputElement).value;
-
-    const todo = { item, description, completed: false };
-
+async function createTodo(item: string) {
+    const todo = { item };
     await fetch(apiURL, {
         method: "POST",
         headers: {
@@ -31,10 +29,17 @@ form.addEventListener("submit", async (e) => {
         },
         body: JSON.stringify(todo)
     });
-
-    form.reset();
-
     fetchTodos();
+}
+
+const form = document.getElementById("todo-form") as HTMLFormElement;
+const todoContainer = document.getElementById("todo-container") as HTMLDivElement;
+
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const item = (document.getElementById("item") as HTMLInputElement).value;
+    createTodo(item);
+    form.reset();
 });
 
 fetchTodos();

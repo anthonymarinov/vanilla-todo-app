@@ -52,7 +52,13 @@ function fetchTodos() {
                         container.innerHTML = "";
                         todos.forEach(function (todo) {
                             var div = document.createElement("div");
-                            div.textContent = "".concat(todo.id, ": ").concat(todo.item, " - ").concat(todo.description, " \n                    [").concat(todo.completed ? "Done" : "Pending", "]");
+                            var updateButton = document.createElement("button");
+                            div.textContent = "\u2022 ".concat(todo.item);
+                            updateButton.textContent = "Update";
+                            updateButton.id = "update-button";
+                            updateButton.type = "submit";
+                            div.appendChild(updateButton);
+                            div.id = "todo-text";
                             container.appendChild(div);
                         });
                     }
@@ -61,29 +67,38 @@ function fetchTodos() {
         });
     });
 }
+function createTodo(item) {
+    return __awaiter(this, void 0, void 0, function () {
+        var todo;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    todo = { item: item };
+                    return [4 /*yield*/, fetch(apiURL, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify(todo)
+                        })];
+                case 1:
+                    _a.sent();
+                    fetchTodos();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 var form = document.getElementById("todo-form");
+var todoContainer = document.getElementById("todo-container");
 form.addEventListener("submit", function (e) { return __awaiter(_this, void 0, void 0, function () {
-    var item, description, todo;
+    var item;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                e.preventDefault();
-                item = document.getElementById("item").value;
-                description = document.getElementById("description").value;
-                todo = { item: item, description: description, completed: false };
-                return [4 /*yield*/, fetch(apiURL, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(todo)
-                    })];
-            case 1:
-                _a.sent();
-                form.reset();
-                fetchTodos();
-                return [2 /*return*/];
-        }
+        e.preventDefault();
+        item = document.getElementById("item").value;
+        createTodo(item);
+        form.reset();
+        return [2 /*return*/];
     });
 }); });
 fetchTodos();
