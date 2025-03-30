@@ -22,7 +22,7 @@ public class TodoHandler implements HttpHandler {
 
         if ("OPTIONS".equalsIgnoreCase(method)) {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", 
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", 
                     "GET, POST, PUT, DELETE, OPTIONS");
             exchange.getResponseHeaders().add("Access-Control-Allow-Headers", 
                     "Content-Type");
@@ -133,31 +133,46 @@ public class TodoHandler implements HttpHandler {
      */
     private void handlePut(HttpExchange exchange) 
             throws IOException, SQLException {
-        InputStreamReader inStreamReader = new InputStreamReader(
-                exchange.getRequestBody(), StandardCharsets.UTF_8);
-        BufferedReader buffReader = new BufferedReader(inStreamReader);
-        String body = buffReader.lines().collect(Collectors.joining("\n"));
+        try {
+            InputStreamReader inStreamReader = new InputStreamReader(
+                    exchange.getRequestBody(), StandardCharsets.UTF_8);
+            BufferedReader buffReader = new BufferedReader(inStreamReader);
+            String body = buffReader.lines().collect(Collectors.joining("\n"));
+            String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
-        String idString = body.replaceAll(".*\"id\"\\s*:\\s*(\\d+).*", "$1");
-        int id = Integer.parseInt(idString);
-        String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+            String path = exchange.getRequestURI().getPath();
+            String[] segments = path.split("/");
+            if (segments.length < 3) {
+                this.sendResponse(exchange,
+                    400,
+                    "{\"error\": \"Todo ID not provided.\"}");
+            }
+            int id = Integer.parseInt(segments[2]);
 
-        Connection conn = DB.getConnection();
-        String sql = "UPDATE todos" + 
-                "SET item = " + item +
-                "WHERE id = " + id;
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        int rows = pstmt.executeUpdate();
-        pstmt.close();
-        conn.close();
-        inStreamReader.close();
-        buffReader.close();
+            Connection conn = DB.getConnection();
+            String sql = "UPDATE todos SET item = ? WHERE id = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, item);
+            pstmt.setInt(2, id);
+            int affectedRows = pstmt.executeUpdate();
+            pstmt.close();
+            conn.close();
 
-        this.sendResponse(
-                exchange, 
-                200, 
-                "{\"message\": \"Todo updated\", \"rows\": " + rows + "}"
-        );
+            if (affectedRows > 0) {
+                this.sendResponse(exchange,
+                        200,
+                        "{\"message\": \"Todo successfully updated.\"}");
+            } else {
+                this.sendResponse(exchange,
+                        404,
+                        "{\"error\": \"Todo not found.\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.sendResponse(exchange, 
+                    500,
+                    "{\"error\": \"Server Error: " + e.getMessage() + "\"}");
+        }
     }
 
     /**
@@ -165,13 +180,41 @@ public class TodoHandler implements HttpHandler {
      * @param exchange
      * @throws IOException
      */
-    private void handleDelete(HttpExchange exchange) throws IOException {
-        // TODO *****
-        this.sendResponse(
-                exchange,
-                200,
-                "{\"message\": \"DELETE method not implemented yet\"}"
-        );
+    private void handleDelete(HttpExchange exchange) 
+            throws IOException, SQLException {
+        try {
+            String path = exchange.getRequestURI().getPath();
+            String[] segments = path.split("/");
+            if (segments.length < 3) {
+                this.sendResponse(exchange, 
+                        400, 
+                        "{\"error\": \"Todo ID not provided.\"}");
+            }
+            int id = Integer.parseInt(segments[2]);
+
+            Connection conn = DB.getConnection();
+            String sql = "DELETE FROM todos WHERE id = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, id);
+            int affectedRows = pstmt.executeUpdate();
+            pstmt.close();
+            conn.close();
+
+            if (affectedRows > 0) {
+                this.sendResponse(exchange,
+                        200,
+                        "{\"message\": \"Todo successfully deleted.\"}");
+            } else {
+                this.sendResponse(exchange,
+                        404,
+                        "{\"error\": \"Todo not found.\"}");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            this.sendResponse(exchange, 
+                    500,
+                    "{\"error\": \"Server Error: " + e.getMessage() + "\"}");
+        }
     }
 
     private void sendResponse(

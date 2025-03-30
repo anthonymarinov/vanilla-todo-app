@@ -78,9 +78,10 @@ function displayTodos() {
                     }
                     else {
                         todoList.forEach(function (todo) {
-                            todoContainer.innerHTML += "\n                <div class=\"todo\">\n                    <span>".concat(todo.item, "</span>\n                    <div class=\"actions\">\n                        <button class=\"edit\">\n                            <i class=\"fas fa-edit\"></i>\n                        </button>\n                        <button class=\"delete\">\n                            <i class=\"far fa-trash-alt\"></i>\n                        </button>\n                    </div>\n                </div>\n            ");
+                            todoContainer.innerHTML += "\n                <div class=\"todo\" data-id=\"".concat(todo.id, "\">\n                    <span>").concat(todo.item, "</span>\n                    <div class=\"actions\">\n                        <button class=\"edit\" data-id=\"").concat(todo.id, "\">\n                            <i class=\"fas fa-edit\"></i>\n                        </button>\n                        <button class=\"delete\" data-id=\"").concat(todo.id, "\">\n                            <i class=\"far fa-trash-alt\"></i>\n                        </button>\n                    </div>\n                </div>\n            ");
                         });
                     }
+                    attachDeleteHandlers();
                     return [2 /*return*/];
             }
         });
@@ -132,6 +133,47 @@ function addTodo() {
                     displayTodos();
                     newTodoInput.value = "";
                     return [2 /*return*/];
+            }
+        });
+    });
+}
+function deleteTodo(id) {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, result, error_3;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, fetch("".concat(apiURL, "/").concat(id), {
+                            method: "DELETE",
+                            headers: {
+                                "Content-Type": "applications/json",
+                            },
+                        })];
+                case 1:
+                    response = _a.sent();
+                    return [4 /*yield*/, response.json()];
+                case 2:
+                    result = _a.sent();
+                    console.log("success: ", result.message);
+                    displayTodos();
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_3 = _a.sent();
+                    console.error(error_3);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function attachDeleteHandlers() {
+    var deleteButtons = document.querySelectorAll('.delete');
+    deleteButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            var id = button.dataset.id;
+            if (id) {
+                deleteTodo(id);
             }
         });
     });

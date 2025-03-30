@@ -31,13 +31,13 @@ async function displayTodos() {
     } else {
         todoList.forEach((todo) => {
             todoContainer.innerHTML += `
-                <div class="todo">
+                <div class="todo" data-id="${todo.id}">
                     <span>${todo.item}</span>
                     <div class="actions">
-                        <button class="edit">
+                        <button class="edit" data-id="${todo.id}">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="delete">
+                        <button class="delete" data-id="${todo.id}">
                             <i class="far fa-trash-alt"></i>
                         </button>
                     </div>
@@ -45,6 +45,7 @@ async function displayTodos() {
             `;
         });
     }
+    attachDeleteHandlers();
 }
 
 async function createTodo(data) {
@@ -70,6 +71,35 @@ async function addTodo() {
     await createTodo(data);
     displayTodos();
     newTodoInput.value = "";
+}
+
+async function deleteTodo(id: string) {
+    try {
+        const response = await fetch(`${apiURL}/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "applications/json",
+            },
+        });
+        const result = await response.json();
+        console.log("success: ", result.message);
+        displayTodos();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function attachDeleteHandlers() {
+    const deleteButtons = 
+            document.querySelectorAll('.delete') as NodeListOf<HTMLButtonElement>;
+    deleteButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+            const id = button.dataset.id;
+            if (id) {
+                deleteTodo(id);
+            }
+        });
+    });
 }
 
 addForm.addEventListener("submit", (event) => {
