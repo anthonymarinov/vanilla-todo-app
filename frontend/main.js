@@ -37,6 +37,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var apiURL = "http://localhost:8000/todos";
 var newTodoInput = document.querySelector(".add-todo input");
 var addForm = document.querySelector(".add-todo");
+var addButton = document.querySelector(".add-button");
+var isEditingTask = false;
+var editButtonTodoID = "";
 function getTodos() {
     return __awaiter(this, void 0, void 0, function () {
         var response, todoList, error_1;
@@ -82,6 +85,7 @@ function displayTodos() {
                         });
                     }
                     attachDeleteHandlers();
+                    attachUpdateHandlers();
                     return [2 /*return*/];
             }
         });
@@ -178,8 +182,82 @@ function attachDeleteHandlers() {
         });
     });
 }
+function updateTodo(data, id) {
+    return __awaiter(this, void 0, void 0, function () {
+        var response, result, error_4;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    _a.trys.push([0, 3, , 4]);
+                    return [4 /*yield*/, fetch("".concat(apiURL, "/").concat(id), {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(data)
+                        })];
+                case 1:
+                    response = _a.sent();
+                    return [4 /*yield*/, response.json()];
+                case 2:
+                    result = _a.sent();
+                    console.log("success: ", result.message);
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_4 = _a.sent();
+                    console.error(error_4);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/];
+            }
+        });
+    });
+}
+function attachUpdateHandlers() {
+    var updateButtons = document.querySelectorAll(".edit");
+    updateButtons.forEach(function (button) {
+        var parent = button.parentElement;
+        if (!parent)
+            return;
+        var grandParent = parent.parentElement;
+        if (!grandParent)
+            return;
+        var todoName = grandParent.children[0];
+        button.addEventListener("click", function () {
+            newTodoInput.value = todoName.innerText;
+            addButton.innerHTML = "Save Edit";
+            isEditingTask = true;
+            if (!button.dataset.id) {
+                console.error("Missing Todo ID");
+                return;
+            }
+            editButtonTodoID = button.dataset.id;
+        });
+    });
+}
+function editTodo() {
+    return __awaiter(this, void 0, void 0, function () {
+        var data;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    data = { item: newTodoInput.value };
+                    if (!isEditingTask) return [3 /*break*/, 2];
+                    return [4 /*yield*/, updateTodo(data, editButtonTodoID)];
+                case 1:
+                    _a.sent();
+                    _a.label = 2;
+                case 2:
+                    displayTodos();
+                    newTodoInput.value = "";
+                    isEditingTask = false;
+                    addButton.innerHTML = "Add";
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
 addForm.addEventListener("submit", function (event) {
     event.preventDefault();
-    addTodo();
+    isEditingTask ? editTodo() : addTodo();
 });
 displayTodos();

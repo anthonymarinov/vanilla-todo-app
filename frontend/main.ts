@@ -6,6 +6,10 @@ interface Todo {
 const apiURL = "http://localhost:8000/todos";
 const newTodoInput = document.querySelector(".add-todo input") as HTMLInputElement;
 const addForm = document.querySelector(".add-todo") as HTMLFormElement;
+const addButton = document.querySelector(".add-button") as HTMLButtonElement;
+
+let isEditingTask = false;
+let editButtonTodoID = "";
 
 async function getTodos() {
     try {
@@ -46,6 +50,7 @@ async function displayTodos() {
         });
     }
     attachDeleteHandlers();
+    attachUpdateHandlers();
 }
 
 async function createTodo(data) {
@@ -102,9 +107,61 @@ function attachDeleteHandlers() {
     });
 }
 
+async function updateTodo(data, id: string) {
+    try {
+        const response = await fetch(`${apiURL}/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        console.log("success: ", result.message);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function attachUpdateHandlers() {
+    const updateButtons =
+            document.querySelectorAll(".edit") as NodeListOf<HTMLButtonElement>;
+    updateButtons.forEach((button) => {
+        const parent = button.parentElement;
+        if (!parent) return;
+        const grandParent = parent.parentElement;
+        if (!grandParent) return;
+
+        const todoName = grandParent.children[0] as HTMLElement;
+
+        button.addEventListener("click", () => {
+            newTodoInput.value = todoName.innerText;
+            addButton.innerHTML = "Save Edit";
+            isEditingTask = true;
+            if (!button.dataset.id) {
+                console.error("Missing Todo ID");
+                return;
+            }
+            editButtonTodoID = button.dataset.id;
+        });
+    })
+}
+
+async function editTodo() {
+    const data = { item: newTodoInput.value };
+
+    if (isEditingTask) await updateTodo(data, editButtonTodoID);
+    displayTodos();
+
+    newTodoInput.value = "";
+    isEditingTask = false;
+    addButton.innerHTML = "Add";
+}
+
 addForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    addTodo();
+    isEditingTask ? editTodo() : addTodo();
 });
 
 displayTodos();
