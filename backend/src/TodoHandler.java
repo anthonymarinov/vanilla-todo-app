@@ -1,15 +1,22 @@
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpExchange;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class handles the requests to /todos and performs CRUD operations on
  * the SQLite database.
  */
 public class TodoHandler implements HttpHandler {
+
+    private Gson gson = new Gson();
+
     /**
      * This method reads the request method from the HTTP request (exchange)
      * and calls the appropeiate class method to deal with the request.
@@ -71,27 +78,19 @@ public class TodoHandler implements HttpHandler {
         String sql = "SELECT id, item FROM todos";
         ResultSet rs = stmt.executeQuery(sql);
 
-        StringBuilder json = new StringBuilder();
-        json.append("[");
-        boolean first = true;
+        List<Todo> todos = new ArrayList<>();
         while (rs.next()) {
-            if (!first) {
-                json.append(",");
-            }
-            json.append("{")
-                .append("\"id\":").append(rs.getInt("id")).append(",")
-                .append("\"item\":\"").append(rs.getString("item")).append("\"")
-                .append("}");
-            first = false;
+            Todo todo = new Todo();
+            todo.setId(rs.getInt("id"));
+            todo.setItem(rs.getString("item"));
+            todos.add(todo);
         }
-
-        json.append("]");
-
         rs.close();
         stmt.close();
         conn.close();
 
-        this.sendResponse(exchange, 200, json.toString());
+        String jsonResponse = gson.toJson(todos);
+        this.sendResponse(exchange, 200, jsonResponse);
     }
 
     /**
@@ -106,24 +105,30 @@ public class TodoHandler implements HttpHandler {
                 exchange.getRequestBody(), StandardCharsets.UTF_8);
         BufferedReader buffRead = new BufferedReader(inStreamRead);
         String body = buffRead.lines().collect(Collectors.joining("\n"));
-        
-        String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
 
-        Connection conn = DB.getConnection();
-        String sql = "INSERT INTO todos (item) VALUES (?)";
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        pstmt.setString(1, item);
-        int rows = pstmt.executeUpdate();
-        pstmt.close();
-        conn.close();
-        inStreamRead.close();
-        buffRead.close();
+        try {
+            Todo newTodo = gson.fromJson(body, Todo.class);
+            if (newTodo == null || newTodo.getItem() == null) {
+            this.sendResponse(exchange, 400, "{\"error\":\"Invalid Todo data\"}");
+            return;
+            }
 
-        this.sendResponse(
-                exchange, 
-                201, 
-                "{\"message\": \"Todo created\", \"rows\": " + rows + "}"
-        );
+            Connection conn = DB.getConnection();
+            String sql = "INSERT INTO todos (item) VALUES (?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, newTodo.getItem());
+            int rows = pstmt.executeUpdate();
+            pstmt.close();
+            conn.close();
+
+            this.sendResponse(exchange, 200, "{\"message\": \"Todo created\", \"rows\": " + rows + "}");
+        } catch (JsonSyntaxException e) {
+            e.printStackTrace();
+            this.sendResponse(exchange, 400, "{\"error\":\"Invalid JSON\"}");
+        } finally {
+            buffRead.close();
+            inStreamRead.close();
+        }
     }
 
     /**
@@ -133,12 +138,13 @@ public class TodoHandler implements HttpHandler {
      */
     private void handlePut(HttpExchange exchange) 
             throws IOException, SQLException {
+        InputStreamReader inStreamReader = new InputStreamReader(
+            exchange.getRequestBody(), StandardCharsets.UTF_8);
+        BufferedReader buffReader = new BufferedReader(inStreamReader);
+        String body = buffReader.lines().collect(Collectors.joining("\n"));
+
         try {
-            InputStreamReader inStreamReader = new InputStreamReader(
-                    exchange.getRequestBody(), StandardCharsets.UTF_8);
-            BufferedReader buffReader = new BufferedReader(inStreamReader);
-            String body = buffReader.lines().collect(Collectors.joining("\n"));
-            String item = body.replaceAll(".*\"item\"\\s*:\\s*\"([^\"]+)\".*", "$1");
+            Todo updateTodo = gson.fromJson(body, Todo.class);
 
             String path = exchange.getRequestURI().getPath();
             String[] segments = path.split("/");
@@ -152,7 +158,7 @@ public class TodoHandler implements HttpHandler {
             Connection conn = DB.getConnection();
             String sql = "UPDATE todos SET item = ? WHERE id = ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, item);
+            pstmt.setString(1, updateTodo.getItem());
             pstmt.setInt(2, id);
             int affectedRows = pstmt.executeUpdate();
             pstmt.close();
@@ -167,11 +173,9 @@ public class TodoHandler implements HttpHandler {
                         404,
                         "{\"error\": \"Todo not found.\"}");
             }
-        } catch (Exception e) {
+        } catch (JsonSyntaxException e) {
             e.printStackTrace();
-            this.sendResponse(exchange, 
-                    500,
-                    "{\"error\": \"Server Error: " + e.getMessage() + "\"}");
+            this.sendResponse(exchange, 500, "{\"error\":\"Invalid JSON\"}");
         }
     }
 
