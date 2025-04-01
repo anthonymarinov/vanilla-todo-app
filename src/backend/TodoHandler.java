@@ -232,9 +232,13 @@ public class TodoHandler implements HttpHandler {
         exchange.getResponseHeaders().add("Content-Type", "application/json");
 
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
-        exchange.sendResponseHeaders(statusCode, bytes.length);
-        OutputStream os = exchange.getResponseBody();
-        os.write(bytes);
-        os.close();
+        try {
+            exchange.sendResponseHeaders(statusCode, bytes.length);
+            OutputStream os = exchange.getResponseBody();
+            os.write(bytes);
+            os.close();
+        } catch (IOException e) {
+            System.err.println("Error writing response: " + e.getMessage());
+        }
     }
 }
